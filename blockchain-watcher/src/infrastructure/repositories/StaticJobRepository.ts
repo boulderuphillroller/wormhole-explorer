@@ -19,6 +19,7 @@ import { FileMetadataRepository, SnsEventRepository } from "./index";
 import { HandleSolanaTransactions } from "../../domain/actions/solana/HandleSolanaTransactions";
 import { solanaLogMessagePublishedMapper, evmLogMessagePublishedMapper } from "../mappers";
 import log from "../log";
+import { Config } from "../config";
 
 export class StaticJobRepository implements JobRepository {
   private fileRepo: FileMetadataRepository;
@@ -35,8 +36,7 @@ export class StaticJobRepository implements JobRepository {
   private solanaSlotRepo: SolanaSlotRepository;
 
   constructor(
-    path: string,
-    dryRun: boolean,
+    cfg: Config,
     blockRepoProvider: (chain: string) => EvmBlockRepository,
     repos: {
       metadataRepo: MetadataRepository<any>;
@@ -45,18 +45,19 @@ export class StaticJobRepository implements JobRepository {
       solanaSlotRepo: SolanaSlotRepository;
     }
   ) {
-    this.fileRepo = new FileMetadataRepository(path);
+    this.fileRepo = new FileMetadataRepository(cfg);
     this.blockRepoProvider = blockRepoProvider;
     this.metadataRepo = repos.metadataRepo;
     this.statsRepo = repos.statsRepo;
     this.snsRepo = repos.snsRepo;
     this.solanaSlotRepo = repos.solanaSlotRepo;
-    this.dryRun = dryRun;
+    this.dryRun = cfg.dryRun;
     this.fill();
   }
 
   async getJobDefinitions(): Promise<JobDefinition[]> {
     const persisted = await this.fileRepo.get("jobs");
+
     if (!persisted) {
       return Promise.resolve([]);
     }
@@ -66,6 +67,7 @@ export class StaticJobRepository implements JobRepository {
 
   getSource(jobDef: JobDefinition): RunPollingJob {
     const src = this.sources.get(jobDef.source.action);
+
     if (!src) {
       throw new Error(`Source ${jobDef.source.action} not found`);
     }
@@ -75,15 +77,20 @@ export class StaticJobRepository implements JobRepository {
 
   async getHandlers(jobDef: JobDefinition): Promise<Handler[]> {
     const result: Handler[] = [];
+
     for (const handler of jobDef.handlers) {
       const maybeHandler = this.handlers.get(handler.action);
+
       if (!maybeHandler) {
         throw new Error(`Handler ${handler.action} not found`);
       }
+
       const mapper = this.mappers.get(handler.mapper);
+
       if (!mapper) {
         throw new Error(`Handler ${handler.mapper} not found`);
       }
+
       result.push((await maybeHandler(handler.config, handler.target, mapper)).bind(maybeHandler));
     }
 
@@ -101,14 +108,15 @@ export class StaticJobRepository implements JobRepository {
           id: jobDef.id,
         })
       );
+
     const pollSolanaTransactions = (jobDef: JobDefinition) =>
       new PollSolanaTransactions(this.metadataRepo, this.solanaSlotRepo, this.statsRepo, {
         ...(jobDef.source.config as PollSolanaTransactionsConfig),
         id: jobDef.id,
       });
+
     this.sources.set("PollEvmLogs", pollEvmLogs);
     this.sources.set("PollSolanaTransactions", pollSolanaTransactions);
-
     this.mappers.set("evmLogMessagePublishedMapper", evmLogMessagePublishedMapper);
     this.mappers.set("solanaLogMessagePublishedMapper", solanaLogMessagePublishedMapper);
 
@@ -128,17 +136,20 @@ export class StaticJobRepository implements JobRepository {
 
       return instance.handle.bind(instance);
     };
+
     const handleSolanaTx = async (config: any, target: string, mapper: any) => {
       const instance = new HandleSolanaTransactions(config, mapper, await this.getTarget(target));
 
       return instance.handle.bind(instance);
     };
+
     this.handlers.set("HandleEvmLogs", handleEvmLogs);
     this.handlers.set("HandleSolanaTransactions", handleSolanaTx);
   }
 
   private async getTarget(target: string): Promise<(items: any[]) => Promise<void>> {
     const maybeTarget = this.targets.get(this.dryRun ? "dummy" : target);
+
     if (!maybeTarget) {
       throw new Error(`Target ${target} not found`);
     }

@@ -5,16 +5,38 @@ import {
   VersionedTransactionResponse,
   SolanaJSONRPCError,
 } from "@solana/web3.js";
-
 import { solana } from "../../domain/entities";
 import { SolanaSlotRepository } from "../../domain/repositories";
 import { Fallible, SolanaFailure } from "../../domain/errors";
+import { RepositoryStrategy } from "./strategies/RepositoryStrategy";
+import { Config } from "../config";
 
-export class Web3SolanaSlotRepository implements SolanaSlotRepository {
-  connection: Connection;
+const COMMITMENT_FINALIZED = "finalized";
+const COMMITMENT_CONDIRMED = "confirmed";
+const LEGACY_VERSION = "legacy";
 
-  constructor(connection: Connection) {
+export class Web3SolanaSlotRepository implements SolanaSlotRepository, RepositoryStrategy {
+  private connection: Connection;
+  private chain: string;
+  private cfg: Config;
+
+  constructor(connection: Connection, cfg: Config, chain: string) {
     this.connection = connection;
+    this.cfg = cfg;
+    this.chain = chain;
+  }
+
+  apply(): boolean {
+    return this.chain === "solana";
+  }
+
+  getName(): string {
+    return "solana-slotRepo";
+  }
+
+  createInstance() {
+    const config = this.cfg.platforms[this.chain];
+    return new Web3SolanaSlotRepository(new Connection(config.rpcs[0]), this.cfg, this.chain);
   }
 
   getLatestSlot(commitment: string): Promise<number> {
@@ -25,7 +47,10 @@ export class Web3SolanaSlotRepository implements SolanaSlotRepository {
     return this.connection
       .getBlock(slot, {
         maxSupportedTransactionVersion: 0,
-        commitment: finality === "finalized" || finality === "confirmed" ? finality : undefined,
+        commitment:
+          finality === COMMITMENT_FINALIZED || finality === COMMITMENT_CONDIRMED
+            ? finality
+            : undefined,
       })
       .then((block) => {
         if (block === null) {
@@ -75,7 +100,7 @@ export class Web3SolanaSlotRepository implements SolanaSlotRepository {
       .map((tx, i) => {
         const message = tx?.transaction.message;
         const accountKeys =
-          message?.version === "legacy"
+          message?.version === LEGACY_VERSION
             ? message.accountKeys.map((key) => key.toBase58())
             : message?.staticAccountKeys.map((key) => key.toBase58());
 
@@ -96,7 +121,7 @@ export class Web3SolanaSlotRepository implements SolanaSlotRepository {
   private mapTx(tx: Partial<VersionedTransactionResponse>, slot?: number): solana.Transaction {
     const message = tx?.transaction?.message;
     const accountKeys =
-      message?.version === "legacy"
+      message?.version === LEGACY_VERSION
         ? message.accountKeys.map((key) => key.toBase58())
         : message?.staticAccountKeys.map((key) => key.toBase58());
 

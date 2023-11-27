@@ -3,7 +3,7 @@ import { EvmJsonRPCBlockRepository } from "../../../src/infrastructure/repositor
 import axios from "axios";
 import nock from "nock";
 import { EvmLogFilter, EvmTag } from "../../../src/domain/entities";
-import { HttpClient } from "../../../src/infrastructure/http/HttpClient";
+import { configMock } from "../../mock/configMock";
 
 axios.defaults.adapter = "http"; // needed by nock
 const rpc = "http://localhost";
@@ -22,23 +22,68 @@ describe("EvmJsonRPCBlockRepository", () => {
     nock.cleanAll();
   });
 
-  it("should be able to get block height", async () => {
+  it("should be apply EvmJsonRPCBlockRepository", async () => {
+    // Given
     const expectedHeight = 1980809n;
     givenARepo();
     givenBlockHeightIs(expectedHeight, "latest");
 
+    // When
+    const result = await repo.apply();
+
+    // Then
+    expect(result).toBe(true);
+  });
+
+  it("should be get name ethereum-evmRepo", async () => {
+    // Given
+    const expectedHeight = 1980809n;
+    givenARepo();
+    givenBlockHeightIs(expectedHeight, "latest");
+
+    // When
+    const result = await repo.getName();
+
+    // Then
+    expect(result).toBe("ethereum-evmRepo");
+  });
+
+  it("should be create instance", async () => {
+    // Given
+    const expectedHeight = 1980809n;
+    givenARepo();
+    givenBlockHeightIs(expectedHeight, "latest");
+
+    // When
+    const result = await repo.createInstance();
+
+    // Then
+    expect(result).toBeInstanceOf(EvmJsonRPCBlockRepository);
+  });
+
+  it("should be able to get block height", async () => {
+    // Given
+    const expectedHeight = 1980809n;
+    givenARepo();
+    givenBlockHeightIs(expectedHeight, "latest");
+
+    // When
     const result = await repo.getBlockHeight("latest");
 
+    // Then
     expect(result).toBe(expectedHeight);
   });
 
   it("should be able to get several blocks", async () => {
+    // Given
     const blockNumbers = [2n, 3n, 4n];
     givenARepo();
     givenBlocksArePresent(blockNumbers);
 
+    // When
     const result = await repo.getBlocks(new Set(blockNumbers));
 
+    // Then
     expect(Object.keys(result)).toHaveLength(blockNumbers.length);
     blockNumbers.forEach((blockNumber) => {
       expect(result[blockHash(blockNumber)].number).toBe(blockNumber);
@@ -46,6 +91,7 @@ describe("EvmJsonRPCBlockRepository", () => {
   });
 
   it("should be able to get logs", async () => {
+    // Given
     const filter: EvmLogFilter = {
       fromBlock: "safe",
       toBlock: "latest",
@@ -55,8 +101,10 @@ describe("EvmJsonRPCBlockRepository", () => {
 
     givenLogsPresent(filter);
 
+    // When
     const logs = await repo.getFilteredLogs(filter);
 
+    // Then
     expect(logs).toHaveLength(1);
     expect(logs[0].blockNumber).toBe(1n);
     expect(logs[0].blockHash).toBe(blockHash(1n));
@@ -65,7 +113,9 @@ describe("EvmJsonRPCBlockRepository", () => {
 });
 
 const givenARepo = () => {
-  repo = new EvmJsonRPCBlockRepository({ rpc, timeout: 100, chain: "ethereum" }, new HttpClient());
+  const chain = "ethereum";
+  const cfg = configMock();
+  repo = new EvmJsonRPCBlockRepository(cfg, chain);
 };
 
 const givenBlockHeightIs = (height: bigint, commitment: EvmTag) => {

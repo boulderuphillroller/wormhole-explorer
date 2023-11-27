@@ -7,44 +7,68 @@ import {
   PublishBatchRequestEntry,
 } from "@aws-sdk/client-sns";
 import winston from "../log";
+import { SnsEvent } from "../events/SnsEvent";
+import { RepositoryStrategy } from "./strategies/RepositoryStrategy";
+import { Config } from "../config";
+import { SnsRepository } from "../../domain/repositories";
 
+const BLOCKCHAIN_WATCHER = "blockchain-watcher";
+const CLASS_NAME = "SnsEventRepository";
+const FULFILLED_STATUS = "fulfilled";
+const SUCCESS_STATUS = "success";
+const ERROR_STATUS = "error";
 const CHUNK_SIZE = 10;
 
-export class SnsEventRepository {
-  private client: SNSClient;
-  private cfg: SnsConfig;
+export class SnsEventRepository implements SnsRepository, RepositoryStrategy {
   private logger: winston.Logger;
+  private client: SNSClient;
+  private snsCfg: SnsConfig;
+  private cfg: Config;
 
-  constructor(snsClient: SNSClient, cfg: SnsConfig) {
+  constructor(snsClient: SNSClient, cfg: Config) {
     this.client = snsClient;
+    this.snsCfg = cfg.sns;
     this.cfg = cfg;
-    this.logger = winston.child({ module: "SnsEventRepository" });
-    this.logger.info(`Created for topic ${cfg.topicArn}`);
+    this.logger = winston.child({ module: CLASS_NAME });
+    this.logger.info(`Created for topic ${this.snsCfg.topicArn}`);
+  }
+
+  apply(): boolean {
+    return true;
+  }
+
+  getName(): string {
+    return "sns";
+  }
+
+  createInstance(): SnsEventRepository {
+    return new SnsEventRepository(this.client!, this.cfg);
   }
 
   async publish(events: LogFoundEvent<any>[]): Promise<SnsPublishResult> {
     if (!events.length) {
       this.logger.warn("No events to publish, continuing...");
       return {
-        status: "success",
+        status: SUCCESS_STATUS,
       };
     }
 
     const batches: PublishBatchCommandInput[] = [];
+
     const inputs: PublishBatchRequestEntry[] = events
       .map(SnsEvent.fromLogFoundEvent)
       .map((event) => ({
         Id: crypto.randomUUID(),
-        Subject: this.cfg.subject ?? "blockchain-watcher",
+        Subject: this.snsCfg.subject ?? BLOCKCHAIN_WATCHER,
         Message: JSON.stringify(event),
-        MessageGroupId: this.cfg.groupId ?? "blockchain-watcher",
+        MessageGroupId: this.snsCfg.groupId ?? BLOCKCHAIN_WATCHER,
         MessageDeduplicationId: event.trackId,
       }));
 
     // PublishBatchCommand: only supports max 10 items per batch
     for (let i = 0; i < inputs.length; i += CHUNK_SIZE) {
       const batch: PublishBatchCommandInput = {
-        TopicArn: this.cfg.topicArn,
+        TopicArn: this.snsCfg.topicArn,
         PublishBatchRequestEntries: inputs.slice(i, i + CHUNK_SIZE),
       };
 
@@ -54,6 +78,7 @@ export class SnsEventRepository {
     try {
       const promises = [];
       const errors = [];
+
       for (const batch of batches) {
         const command = new PublishBatchCommand(batch);
         promises.push(this.client.send(command));
@@ -62,7 +87,7 @@ export class SnsEventRepository {
       const results = await Promise.allSettled(promises);
 
       for (const result of results) {
-        if (result.status !== "fulfilled") {
+        if (result.status !== FULFILLED_STATUS) {
           this.logger.error(result.reason);
           errors.push(result.reason);
         }
@@ -70,7 +95,7 @@ export class SnsEventRepository {
 
       if (errors.length > 0) {
         return {
-          status: "error",
+          status: ERROR_STATUS,
           reasons: errors,
         };
       }
@@ -78,67 +103,26 @@ export class SnsEventRepository {
       this.logger.error(error);
 
       return {
-        status: "error",
+        status: ERROR_STATUS,
       };
     }
 
     return {
-      status: "success",
+      status: SUCCESS_STATUS,
     };
   }
 
   async asTarget(): Promise<(events: LogFoundEvent<any>[]) => Promise<void>> {
     return async (events: LogFoundEvent<any>[]) => {
       const result = await this.publish(events);
-      if (result.status === "error") {
+
+      if (result.status === ERROR_STATUS) {
         this.logger.error(`Error publishing events to SNS: ${result.reason ?? result.reasons}`);
         throw new Error(`Error publishing events to SNS: ${result.reason}`);
       }
+
       this.logger.info(`Published ${events.length} events to SNS`);
     };
-  }
-}
-
-export class SnsEvent {
-  trackId: string;
-  source: string;
-  event: string;
-  timestamp: string;
-  version: string;
-  data: Record<string, any>;
-
-  constructor(
-    trackId: string,
-    source: string,
-    event: string,
-    timestamp: string,
-    version: string,
-    data: Record<string, any>
-  ) {
-    this.trackId = trackId;
-    this.source = source;
-    this.event = event;
-    this.timestamp = timestamp;
-    this.version = version;
-    this.data = data;
-  }
-
-  static fromLogFoundEvent<T>(logFoundEvent: LogFoundEvent<T>): SnsEvent {
-    return new SnsEvent(
-      `chain-event-${logFoundEvent.txHash}-${logFoundEvent.blockHeight}`,
-      "blockchain-watcher",
-      logFoundEvent.name,
-      new Date().toISOString(),
-      "1",
-      {
-        chainId: logFoundEvent.chainId,
-        emitter: logFoundEvent.address,
-        txHash: logFoundEvent.txHash,
-        blockHeight: logFoundEvent.blockHeight.toString(),
-        blockTime: new Date(logFoundEvent.blockTime * 1000).toISOString(),
-        attributes: logFoundEvent.attributes,
-      }
-    );
   }
 }
 

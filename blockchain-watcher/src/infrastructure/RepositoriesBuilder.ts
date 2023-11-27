@@ -1,18 +1,15 @@
 import { SNSClient, SNSClientConfig } from "@aws-sdk/client-sns";
-import { Connection } from "@solana/web3.js";
 import { Config } from "./config";
 import {
   SnsEventRepository,
   EvmJsonRPCBlockRepository,
-  EvmJsonRPCBlockRepositoryCfg,
   FileMetadataRepository,
   PromStatRepository,
   StaticJobRepository,
   Web3SolanaSlotRepository,
 } from "./repositories";
-
-import { HttpClient } from "./http/HttpClient";
 import { JobRepository } from "../domain/repositories";
+import { RepositoriesStrategy } from "./repositories/strategies/RepositoriesStrategy";
 
 export class RepositoriesBuilder {
   private cfg: Config;
@@ -24,51 +21,25 @@ export class RepositoriesBuilder {
     this.build();
   }
 
-  private build() {
+  private build(): void {
     this.snsClient = this.createSnsClient();
 
-    this.repositories.set("sns", new SnsEventRepository(this.snsClient, this.cfg.sns));
-    this.repositories.set("metrics", new PromStatRepository());
-
-    this.cfg.metadata?.dir &&
-      this.repositories.set("metadata", new FileMetadataRepository(this.cfg.metadata.dir));
+    const repositoryStrategy = new RepositoriesStrategy(this.snsClient, this.cfg);
+    this.repositories = repositoryStrategy.executeStatic();
 
     this.cfg.supportedChains.forEach((chain) => {
       if (!this.cfg.platforms[chain]) throw new Error(`No config for chain ${chain}`);
-
-      if (chain === "solana") {
-        const cfg = this.cfg.platforms[chain];
-        const solanaSlotRepository = new Web3SolanaSlotRepository(new Connection(cfg.rpcs[0]));
-        this.repositories.set("solana-slotRepo", solanaSlotRepository);
-      }
-
-      if (chain === "ethereum") {
-        const httpClient = this.createHttpClient(this.cfg.platforms[chain].timeout);
-        const repoCfg: EvmJsonRPCBlockRepositoryCfg = {
-          chain,
-          rpc: this.cfg.platforms[chain].rpcs[0],
-          timeout: this.cfg.platforms[chain].timeout,
-        };
-        this.repositories.set(
-          `${chain}-evmRepo`,
-          new EvmJsonRPCBlockRepository(repoCfg, httpClient)
-        );
-      }
+      this.repositories = repositoryStrategy.executeChain(chain);
     });
 
     this.repositories.set(
       "jobs",
-      new StaticJobRepository(
-        this.cfg.jobs.dir,
-        this.cfg.dryRun,
-        (chain: string) => this.getEvmBlockRepository(chain),
-        {
-          metadataRepo: this.getMetadataRepository(),
-          statsRepo: this.getStatsRepository(),
-          snsRepo: this.getSnsEventRepository(),
-          solanaSlotRepo: this.getSolanaSlotRepository(),
-        }
-      )
+      new StaticJobRepository(this.cfg, (chain: string) => this.getEvmBlockRepository(chain), {
+        metadataRepo: this.getMetadataRepository(),
+        statsRepo: this.getStatsRepository(),
+        snsRepo: this.getSnsEventRepository(),
+        solanaSlotRepo: this.getSolanaSlotRepository(),
+      })
     );
   }
 
@@ -118,14 +89,5 @@ export class RepositoriesBuilder {
     }
 
     return new SNSClient(snsCfg);
-  }
-
-  private createHttpClient(timeout?: number, retries?: number): HttpClient {
-    return new HttpClient({
-      retries: retries ?? 3,
-      timeout: timeout ?? 5_000,
-      initialDelay: 1_000,
-      maxDelay: 30_000,
-    });
   }
 }

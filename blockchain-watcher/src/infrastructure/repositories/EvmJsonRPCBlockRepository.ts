@@ -1,22 +1,53 @@
 import { EvmBlock, EvmLogFilter, EvmLog, EvmTag } from "../../domain/entities";
 import { EvmBlockRepository } from "../../domain/repositories";
-import { AxiosInstance } from "axios";
 import winston from "../log";
-import { HttpClient, HttpClientError } from "../http/HttpClient";
+import { HttpClient } from "../http/HttpClient";
+import { HttpClientError } from "../../domain/errors";
+import { Config } from "../config";
+import { RepositoryStrategy } from "./strategies/RepositoryStrategy";
 
 /**
  * EvmJsonRPCBlockRepository is a repository that uses a JSON RPC endpoint to fetch blocks.
  * On the reliability side, only knows how to timeout.
  */
-export class EvmJsonRPCBlockRepository implements EvmBlockRepository {
-  private httpClient: HttpClient;
-  private rpc: URL;
+export class EvmJsonRPCBlockRepository implements EvmBlockRepository, RepositoryStrategy {
   private readonly logger = winston.child({ module: "EvmJsonRPCBlockRepository" });
+  private httpClient: HttpClient;
+  private chain: string;
+  private cfg: Config;
+  private rpc: URL;
 
-  constructor(cfg: EvmJsonRPCBlockRepositoryCfg, httpClient: HttpClient) {
-    this.httpClient = httpClient;
-    this.rpc = new URL(cfg.rpc);
-    this.logger = winston.child({ module: "EvmJsonRPCBlockRepository", chain: cfg.chain });
+  constructor(cfg: Config, chain: string) {
+    const repoCfg: EvmJsonRPCBlockRepositoryCfg = {
+      chain,
+      rpc: cfg.platforms[chain].rpcs[0],
+      timeout: cfg.platforms[chain].timeout,
+    };
+
+    this.logger = winston.child({ module: "EvmJsonRPCBlockRepository", chain: repoCfg.chain });
+
+    this.httpClient = new HttpClient({
+      retries: 3,
+      timeout: cfg.platforms[chain].timeout ?? 5_000,
+      initialDelay: 1_000,
+      maxDelay: 30_000,
+    });
+
+    this.rpc = new URL(repoCfg.rpc);
+    this.chain = chain;
+    this.cfg = cfg;
+  }
+
+  apply(): boolean {
+    return this.chain === "ethereum";
+  }
+
+  getName(): string {
+    return `${this.chain}-evmRepo`;
+  }
+
+  createInstance(): EvmJsonRPCBlockRepository {
+    return new EvmJsonRPCBlockRepository(this.cfg, this.chain);
   }
 
   async getBlockHeight(finality: EvmTag): Promise<bigint> {

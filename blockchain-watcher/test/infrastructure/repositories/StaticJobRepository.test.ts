@@ -7,6 +7,7 @@ import {
   SolanaSlotRepository,
   StatRepository,
 } from "../../../src/domain/repositories";
+import { configMock } from "../../mock/configMock";
 
 const dirPath = "./metadata-repo/jobs";
 const blockRepo: EvmBlockRepository = {} as any as EvmBlockRepository;
@@ -22,7 +23,10 @@ describe("StaticJobRepository", () => {
     if (fs.existsSync(dirPath)) {
       fs.rmSync(dirPath, { recursive: true, force: true });
     }
-    repo = new StaticJobRepository(dirPath, false, () => blockRepo, {
+
+    const cfg = configMock();
+
+    repo = new StaticJobRepository(cfg, () => blockRepo, {
       metadataRepo,
       statsRepo,
       snsRepo,
@@ -31,13 +35,21 @@ describe("StaticJobRepository", () => {
   });
 
   it("should return empty when no file available", async () => {
+    // When
     const jobs = await repo.getJobDefinitions();
+
+    // Then
     expect(jobs).toHaveLength(0);
   });
 
   it("should read jobs from file", async () => {
+    // given
     givenJobsPresent();
+
+    // When
     const jobs = await repo.getJobDefinitions();
+
+    // Then
     expect(jobs).toHaveLength(1);
     expect(jobs[0].id).toEqual("poll-log-message-published-ethereum");
   });

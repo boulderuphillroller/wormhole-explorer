@@ -1,18 +1,32 @@
 import prometheus from "prom-client";
 import { StatRepository } from "../../domain/repositories";
+import { RepositoryStrategy } from "./strategies/RepositoryStrategy";
 
-export class PromStatRepository implements StatRepository {
-  private readonly registry: prometheus.Registry;
+export class PromStatRepository implements StatRepository, RepositoryStrategy {
   private counters: Map<string, prometheus.Counter<string>> = new Map();
   private gauges: Map<string, prometheus.Gauge<string>> = new Map();
+  private readonly registry: prometheus.Registry;
 
   constructor(registry?: prometheus.Registry) {
     this.registry = registry ?? new prometheus.Registry();
   }
 
+  apply(): boolean {
+    return true;
+  }
+
+  getName(): string {
+    return "metrics";
+  }
+
+  createInstance() {
+    return new PromStatRepository();
+  }
+
   public report() {
     return this.registry.metrics();
   }
+
   public count(id: string, labels: Record<string, any>): void {
     const counter = this.getCounter(id, labels);
     counter.inc(labels);
