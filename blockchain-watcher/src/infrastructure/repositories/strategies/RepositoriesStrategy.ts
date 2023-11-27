@@ -20,7 +20,7 @@ export class RepositoriesStrategy {
   executeStatic(): Map<string, any> {
     const repositories = [
       new SnsEventRepository(this.snsClient!, this.cfg),
-      new FileMetadataRepository(this.cfg),
+      new FileMetadataRepository(this.cfg, this.cfg.metadata?.dir!),
       new PromStatRepository(),
     ];
 

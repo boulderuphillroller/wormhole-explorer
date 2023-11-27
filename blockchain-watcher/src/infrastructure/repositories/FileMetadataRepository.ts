@@ -9,9 +9,9 @@ export class FileMetadataRepository implements MetadataRepository<any>, Reposito
   private readonly dirPath: string;
   private readonly cfg: Config;
 
-  constructor(cfg: Config) {
+  constructor(cfg: Config, dirPath: string) {
     this.cfg = cfg;
-    this.dirPath = this.cfg!.metadata!.dir;
+    this.dirPath = dirPath;
 
     if (!fs.existsSync(this.dirPath)) {
       fs.mkdirSync(this.dirPath, { recursive: true });
@@ -27,7 +27,7 @@ export class FileMetadataRepository implements MetadataRepository<any>, Reposito
   }
 
   createInstance() {
-    return new FileMetadataRepository(this.cfg);
+    return new FileMetadataRepository(this.cfg, this.dirPath);
   }
 
   async get(id: string): Promise<any> {

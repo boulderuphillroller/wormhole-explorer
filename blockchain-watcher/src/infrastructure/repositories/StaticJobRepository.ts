@@ -45,7 +45,7 @@ export class StaticJobRepository implements JobRepository {
       solanaSlotRepo: SolanaSlotRepository;
     }
   ) {
-    this.fileRepo = new FileMetadataRepository(cfg);
+    this.fileRepo = new FileMetadataRepository(cfg, cfg.jobs.dir);
     this.blockRepoProvider = blockRepoProvider;
     this.metadataRepo = repos.metadataRepo;
     this.statsRepo = repos.statsRepo;
