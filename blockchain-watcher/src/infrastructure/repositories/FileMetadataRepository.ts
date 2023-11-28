@@ -7,11 +7,9 @@ const UTF8 = "utf8";
 
 export class FileMetadataRepository implements MetadataRepository<any>, StaticStrategy {
   private readonly dirPath: string;
-  private readonly cfg: Config;
 
-  constructor(cfg: Config) {
-    this.cfg = cfg;
-    this.dirPath = this.cfg.metadata?.dir!;
+  constructor(dirPath: string) {
+    this.dirPath = dirPath;
 
     if (!fs.existsSync(this.dirPath)) {
       fs.mkdirSync(this.dirPath, { recursive: true });
@@ -19,7 +17,7 @@ export class FileMetadataRepository implements MetadataRepository<any>, StaticSt
   }
 
   apply(): boolean {
-    return this.cfg.metadata?.dir != undefined;
+    return this.dirPath != undefined;
   }
 
   getName(): string {
@@ -27,7 +25,7 @@ export class FileMetadataRepository implements MetadataRepository<any>, StaticSt
   }
 
   createInstance() {
-    return new FileMetadataRepository(this.cfg);
+    return new FileMetadataRepository(this.dirPath);
   }
 
   async get(id: string): Promise<any> {

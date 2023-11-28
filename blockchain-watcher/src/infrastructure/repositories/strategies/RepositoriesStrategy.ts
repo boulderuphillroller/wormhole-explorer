@@ -23,7 +23,7 @@ export class RepositoriesStrategy {
 
     const repositories: StaticStrategy[] = [
       new SnsEventRepository(this.snsClient!, this.cfg),
-      new FileMetadataRepository(this.cfg),
+      new FileMetadataRepository(this.cfg.metadata!.dir!),
       new PromStatRepository(),
     ];
 
