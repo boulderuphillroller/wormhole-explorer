@@ -9,7 +9,6 @@ import { solana } from "../../domain/entities";
 import { SolanaSlotRepository } from "../../domain/repositories";
 import { Fallible, SolanaFailure } from "../../domain/errors";
 import { DynamicStrategy } from "./strategies/DynamicStrategy";
-import { Config } from "../config";
 
 const COMMITMENT_FINALIZED = "finalized";
 const COMMITMENT_CONDIRMED = "confirmed";
@@ -19,11 +18,9 @@ const NAME = "solana-slotRepo";
 
 export class Web3SolanaSlotRepository implements SolanaSlotRepository, DynamicStrategy {
   private connection: Connection;
-  private cfg: Config;
 
-  constructor(connection: Connection, cfg: Config) {
+  constructor(connection: Connection) {
     this.connection = connection;
-    this.cfg = cfg;
   }
 
   apply(chain: string): boolean {

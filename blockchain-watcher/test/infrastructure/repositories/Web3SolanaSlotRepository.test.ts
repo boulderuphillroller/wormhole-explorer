@@ -1,17 +1,15 @@
 import { expect, describe, it } from "@jest/globals";
 import { solana } from "../../../src/domain/entities";
 import { Web3SolanaSlotRepository } from "../../../src/infrastructure/repositories";
-import { configMock } from "../../mock/configMock";
 
 describe("Web3SolanaSlotRepository", () => {
   const chain = "solana";
-  const cfg = configMock();
 
   describe("strategy", () => {
     it("should be apply Web3SolanaSlotRepository", async () => {
       // Given
       const connectionMock = {};
-      const repo = new Web3SolanaSlotRepository(connectionMock as any, cfg);
+      const repo = new Web3SolanaSlotRepository(connectionMock as any);
 
       // When
       const result = await repo.apply(chain);
@@ -23,7 +21,7 @@ describe("Web3SolanaSlotRepository", () => {
     it("should be get name metadata", async () => {
       // Given
       const connectionMock = {};
-      const repo = new Web3SolanaSlotRepository(connectionMock as any, cfg);
+      const repo = new Web3SolanaSlotRepository(connectionMock as any);
 
       // When
       const result = await repo.getName();
@@ -35,7 +33,7 @@ describe("Web3SolanaSlotRepository", () => {
     it("should be create instance", async () => {
       // Given
       const connectionMock = {};
-      const repo = new Web3SolanaSlotRepository(connectionMock as any, cfg);
+      const repo = new Web3SolanaSlotRepository(connectionMock as any);
 
       // When
       const result = await repo.createInstance();
@@ -51,7 +49,7 @@ describe("Web3SolanaSlotRepository", () => {
       const connectionMock = {
         getSlot: () => Promise.resolve(100),
       };
-      const repository = new Web3SolanaSlotRepository(connectionMock as any, cfg);
+      const repository = new Web3SolanaSlotRepository(connectionMock as any);
 
       // When
       const latestSlot = await repository.getLatestSlot("finalized");
@@ -71,7 +69,7 @@ describe("Web3SolanaSlotRepository", () => {
       const connectionMock = {
         getBlock: (slot: number) => Promise.resolve(expected),
       };
-      const repo = new Web3SolanaSlotRepository(connectionMock as any, cfg);
+      const repo = new Web3SolanaSlotRepository(connectionMock as any);
 
       // When
       const block = (await repo.getBlock(100)).getValue();
@@ -98,7 +96,7 @@ describe("Web3SolanaSlotRepository", () => {
       const connectionMock = {
         getSignaturesForAddress: () => Promise.resolve(expected),
       };
-      const repo = new Web3SolanaSlotRepository(connectionMock as any, cfg);
+      const repo = new Web3SolanaSlotRepository(connectionMock as any);
 
       // When
       const signatures = await repo.getSignaturesForAddress(
@@ -133,7 +131,7 @@ describe("Web3SolanaSlotRepository", () => {
       const connectionMock = {
         getTransactions: (sigs: solana.ConfirmedSignatureInfo[]) => Promise.resolve(expected),
       };
-      const repo = new Web3SolanaSlotRepository(connectionMock as any, cfg);
+      const repo = new Web3SolanaSlotRepository(connectionMock as any);
 
       // When
       const transactions = await repo.getTransactions([

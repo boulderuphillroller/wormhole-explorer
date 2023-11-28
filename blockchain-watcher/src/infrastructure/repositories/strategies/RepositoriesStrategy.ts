@@ -46,7 +46,6 @@ export class RepositoriesStrategy {
         new EvmJsonRPCBlockRepository(this.cfg),
         new Web3SolanaSlotRepository(
           new Connection(platform.rpcs[0], { disableRetryOnRateLimit: true }),
-          this.cfg
         ),
       ];
 
