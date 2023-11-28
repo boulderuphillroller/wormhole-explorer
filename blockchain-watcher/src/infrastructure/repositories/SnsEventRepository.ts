@@ -42,7 +42,7 @@ export class SnsEventRepository implements SnsRepository, StaticStrategy {
   }
 
   createInstance(): SnsEventRepository {
-    return new SnsEventRepository(this.client!, this.cfg);
+    return this;
   }
 
   async publish(events: LogFoundEvent<any>[]): Promise<SnsPublishResult> {

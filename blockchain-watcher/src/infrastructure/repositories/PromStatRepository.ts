@@ -19,8 +19,8 @@ export class PromStatRepository implements StatRepository, StaticStrategy {
     return "metrics";
   }
 
-  createInstance() {
-    return new PromStatRepository();
+  createInstance(): PromStatRepository {
+    return this;
   }
 
   public report() {

@@ -48,7 +48,7 @@ export class EvmJsonRPCBlockRepository implements EvmBlockRepository, DynamicStr
   }
 
   createInstance(): EvmJsonRPCBlockRepository {
-    return new EvmJsonRPCBlockRepository(this.cfg);
+    return this;
   }
 
   async getBlockHeight(finality: EvmTag): Promise<bigint> {

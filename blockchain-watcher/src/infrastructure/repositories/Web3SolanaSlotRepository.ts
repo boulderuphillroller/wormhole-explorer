@@ -21,8 +21,8 @@ export class Web3SolanaSlotRepository implements SolanaSlotRepository, DynamicSt
   private connection: Connection;
   private cfg: Config;
 
-  constructor(cfg: Config) {
-    this.connection = new Connection(cfg.platforms[CHAIN].rpcs[0]);
+  constructor(connection: Connection, cfg: Config) {
+    this.connection = connection;
     this.cfg = cfg;
   }
 
@@ -34,8 +34,8 @@ export class Web3SolanaSlotRepository implements SolanaSlotRepository, DynamicSt
     return NAME;
   }
 
-  createInstance() {
-    return new Web3SolanaSlotRepository(this.cfg);
+  createInstance(): Web3SolanaSlotRepository {
+    return this;
   }
 
   getLatestSlot(commitment: string): Promise<number> {

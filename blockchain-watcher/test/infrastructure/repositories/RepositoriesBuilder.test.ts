@@ -35,7 +35,7 @@ describe("RepositoriesBuilder", () => {
     const repos = new RepositoriesBuilder(configMock(["ethereum", "solana"]));
     // Then
     const job = repos.getJobsRepository();
-    expect(job).toBeTruthy()
+    expect(job).toBeTruthy();
 
     expect(repos.getEvmBlockRepository("ethereum")).toBeInstanceOf(EvmJsonRPCBlockRepository);
     expect(repos.getMetadataRepository()).toBeInstanceOf(FileMetadataRepository);

@@ -24,8 +24,8 @@ export class FileMetadataRepository implements MetadataRepository<any>, StaticSt
     return "metadata";
   }
 
-  createInstance() {
-    return new FileMetadataRepository(this.dirPath);
+  createInstance(): FileMetadataRepository {
+    return this;
   }
 
   async get(id: string): Promise<any> {

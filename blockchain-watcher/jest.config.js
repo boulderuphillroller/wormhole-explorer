@@ -8,11 +8,11 @@ module.exports = {
   },
   collectCoverage: true,
   collectCoverageFrom: ["**/*.(t|j)s"],
-  coveragePathIgnorePatterns: ["node_modules", "test"],
+  coveragePathIgnorePatterns: ["node_modules", "test", "start", "Server", "log", "index"],
   coverageDirectory: "./coverage",
   coverageThreshold: {
     global: {
-      lines: 55,
+      lines: 70,
     },
   },
 };

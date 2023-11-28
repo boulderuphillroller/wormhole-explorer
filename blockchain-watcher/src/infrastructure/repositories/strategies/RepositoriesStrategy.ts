@@ -39,11 +39,15 @@ export class RepositoriesStrategy {
     let dynamicRepositories = new Map();
 
     this.cfg.supportedChains.forEach((chain) => {
-      if (!this.cfg.platforms[chain]) throw new Error(`No config for chain ${chain}`);
+      const platform = this.cfg.platforms[chain];
+      if (!platform) throw new Error(`No config for chain ${chain}`);
 
       const repositories: DynamicStrategy[] = [
         new EvmJsonRPCBlockRepository(this.cfg),
-        new Web3SolanaSlotRepository(this.cfg),
+        new Web3SolanaSlotRepository(
+          new Connection(platform.rpcs[0], { disableRetryOnRateLimit: true }),
+          this.cfg
+        ),
       ];
 
       repositories.forEach((repository) => {
