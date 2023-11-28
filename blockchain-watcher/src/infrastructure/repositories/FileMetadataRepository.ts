@@ -1,17 +1,17 @@
 import { MetadataRepository } from "../../domain/repositories";
 import fs from "fs";
-import { RepositoryStrategy } from "./strategies/RepositoryStrategy";
+import { StaticStrategy } from "./strategies/StaticStrategy";
 import { Config } from "../config";
 
 const UTF8 = "utf8";
 
-export class FileMetadataRepository implements MetadataRepository<any>, RepositoryStrategy {
+export class FileMetadataRepository implements MetadataRepository<any>, StaticStrategy {
   private readonly dirPath: string;
   private readonly cfg: Config;
 
-  constructor(cfg: Config, dirPath: string) {
+  constructor(cfg: Config) {
     this.cfg = cfg;
-    this.dirPath = dirPath;
+    this.dirPath = this.cfg.metadata?.dir!;
 
     if (!fs.existsSync(this.dirPath)) {
       fs.mkdirSync(this.dirPath, { recursive: true });
@@ -27,7 +27,7 @@ export class FileMetadataRepository implements MetadataRepository<any>, Reposito
   }
 
   createInstance() {
-    return new FileMetadataRepository(this.cfg, this.dirPath);
+    return new FileMetadataRepository(this.cfg);
   }
 
   async get(id: string): Promise<any> {

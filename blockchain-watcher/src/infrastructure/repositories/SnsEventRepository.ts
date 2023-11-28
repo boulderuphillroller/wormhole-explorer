@@ -8,7 +8,7 @@ import {
 } from "@aws-sdk/client-sns";
 import winston from "../log";
 import { SnsEvent } from "../events/SnsEvent";
-import { RepositoryStrategy } from "./strategies/RepositoryStrategy";
+import { StaticStrategy } from "./strategies/StaticStrategy";
 import { Config } from "../config";
 import { SnsRepository } from "../../domain/repositories";
 
@@ -19,7 +19,7 @@ const SUCCESS_STATUS = "success";
 const ERROR_STATUS = "error";
 const CHUNK_SIZE = 10;
 
-export class SnsEventRepository implements SnsRepository, RepositoryStrategy {
+export class SnsEventRepository implements SnsRepository, StaticStrategy {
   private logger: winston.Logger;
   private client: SNSClient;
   private snsCfg: SnsConfig;

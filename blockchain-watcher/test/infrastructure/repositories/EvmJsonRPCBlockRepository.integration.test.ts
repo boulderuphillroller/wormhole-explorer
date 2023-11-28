@@ -29,7 +29,7 @@ describe("EvmJsonRPCBlockRepository", () => {
     givenBlockHeightIs(expectedHeight, "latest");
 
     // When
-    const result = await repo.apply();
+    const result = await repo.apply("ethereum");
 
     // Then
     expect(result).toBe(true);
@@ -113,9 +113,8 @@ describe("EvmJsonRPCBlockRepository", () => {
 });
 
 const givenARepo = () => {
-  const chain = "ethereum";
   const cfg = configMock();
-  repo = new EvmJsonRPCBlockRepository(cfg, chain);
+  repo = new EvmJsonRPCBlockRepository(cfg);
 };
 
 const givenBlockHeightIs = (height: bigint, commitment: EvmTag) => {

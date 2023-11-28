@@ -8,35 +8,34 @@ import {
 import { solana } from "../../domain/entities";
 import { SolanaSlotRepository } from "../../domain/repositories";
 import { Fallible, SolanaFailure } from "../../domain/errors";
-import { RepositoryStrategy } from "./strategies/RepositoryStrategy";
+import { DynamicStrategy } from "./strategies/DynamicStrategy";
 import { Config } from "../config";
 
 const COMMITMENT_FINALIZED = "finalized";
 const COMMITMENT_CONDIRMED = "confirmed";
 const LEGACY_VERSION = "legacy";
+const CHAIN = "solana";
+const NAME = "solana-slotRepo";
 
-export class Web3SolanaSlotRepository implements SolanaSlotRepository, RepositoryStrategy {
+export class Web3SolanaSlotRepository implements SolanaSlotRepository, DynamicStrategy {
   private connection: Connection;
-  private chain: string;
   private cfg: Config;
 
-  constructor(connection: Connection, cfg: Config, chain: string) {
-    this.connection = connection;
+  constructor(cfg: Config) {
+    this.connection = new Connection(cfg.platforms[CHAIN].rpcs[0]);
     this.cfg = cfg;
-    this.chain = chain;
   }
 
-  apply(): boolean {
-    return this.chain === "solana";
+  apply(chain: string): boolean {
+    return chain === CHAIN;
   }
 
   getName(): string {
-    return "solana-slotRepo";
+    return NAME;
   }
 
   createInstance() {
-    const config = this.cfg.platforms[this.chain];
-    return new Web3SolanaSlotRepository(new Connection(config.rpcs[0]), this.cfg, this.chain);
+    return new Web3SolanaSlotRepository(this.cfg);
   }
 
   getLatestSlot(commitment: string): Promise<number> {

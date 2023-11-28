@@ -1,17 +1,17 @@
 import { SnsConfig } from "../../src/infrastructure/repositories";
 import { Config, PlatformConfig } from "../../src/infrastructure/config";
 
-export const configMock = (): Config => {
+export const configMock = (chains: string[] = []): Config => {
   const platformRecord: Record<string, PlatformConfig> = {
-    latest: {
-      name: "test",
+    ethereum: {
+      name: "ethereum",
       network: "ETH",
       chainId: 1222341,
       rpcs: ["http://localhost"],
       timeout: 100,
     },
-    ethereum: {
-      name: "test",
+    solana: {
+      name: "solana",
       network: "ETH",
       chainId: 1222341,
       rpcs: ["http://localhost"],
@@ -44,7 +44,7 @@ export const configMock = (): Config => {
       dir: "./metadata-repo/jobs",
     },
     platforms: platformRecord,
-    supportedChains: [],
+    supportedChains: chains,
   };
 
   return cfg;

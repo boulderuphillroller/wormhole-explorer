@@ -6,7 +6,7 @@ import { configMock } from "../../mock/configMock";
 describe("FileMetadataRepository", () => {
   const dirPath = "./metadata-repo";
   const cfg = configMock();
-  const repo = new FileMetadataRepository(cfg, dirPath);
+  const repo = new FileMetadataRepository(cfg);
 
   beforeEach(() => {
     if (!fs.existsSync(dirPath)) {

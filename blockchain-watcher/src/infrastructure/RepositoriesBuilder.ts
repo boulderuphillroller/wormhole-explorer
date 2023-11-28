@@ -29,9 +29,12 @@ export class RepositoriesBuilder {
     const staticRepositories = repositoryStrategy.executeStatic();
     const dynamicRepositories = repositoryStrategy.executeDynamic();
 
-    this.repositories = staticRepositories;
-    this.repositories = {...this.repositories, dynamicRepositories}
-    dynamicRepositories.forEach((instance, name) => { this.repositories.set(name, instance) });
+    staticRepositories.forEach((instance, name) => {
+      this.repositories.set(name, instance);
+    });
+    dynamicRepositories.forEach((instance, name) => {
+      this.repositories.set(name, instance);
+    });
 
     this.repositories.set(
       "jobs",

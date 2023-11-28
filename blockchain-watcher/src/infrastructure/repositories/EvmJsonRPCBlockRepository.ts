@@ -4,50 +4,51 @@ import winston from "../log";
 import { HttpClient } from "../http/HttpClient";
 import { HttpClientError } from "../../domain/errors";
 import { Config } from "../config";
-import { RepositoryStrategy } from "./strategies/RepositoryStrategy";
+import { DynamicStrategy } from "./strategies/DynamicStrategy";
 
 /**
  * EvmJsonRPCBlockRepository is a repository that uses a JSON RPC endpoint to fetch blocks.
  * On the reliability side, only knows how to timeout.
  */
-export class EvmJsonRPCBlockRepository implements EvmBlockRepository, RepositoryStrategy {
+
+const CHAIN = "ethereum";
+
+export class EvmJsonRPCBlockRepository implements EvmBlockRepository, DynamicStrategy {
   private readonly logger = winston.child({ module: "EvmJsonRPCBlockRepository" });
   private httpClient: HttpClient;
-  private chain: string;
   private cfg: Config;
   private rpc: URL;
 
-  constructor(cfg: Config, chain: string) {
+  constructor(cfg: Config) {
     const repoCfg: EvmJsonRPCBlockRepositoryCfg = {
-      chain,
-      rpc: cfg.platforms[chain].rpcs[0],
-      timeout: cfg.platforms[chain].timeout,
+      chain: CHAIN,
+      rpc: cfg.platforms[CHAIN].rpcs[0],
+      timeout: cfg.platforms[CHAIN].timeout,
     };
 
     this.logger = winston.child({ module: "EvmJsonRPCBlockRepository", chain: repoCfg.chain });
 
     this.httpClient = new HttpClient({
       retries: 3,
-      timeout: cfg.platforms[chain].timeout ?? 5_000,
+      timeout: cfg.platforms[CHAIN].timeout ?? 5_000,
       initialDelay: 1_000,
       maxDelay: 30_000,
     });
 
     this.rpc = new URL(repoCfg.rpc);
-    this.chain = chain;
     this.cfg = cfg;
   }
 
-  apply(): boolean {
-    return this.chain === "ethereum";
+  apply(chain: string): boolean {
+    return chain === CHAIN;
   }
 
   getName(): string {
-    return `${this.chain}-evmRepo`;
+    return `${CHAIN}-evmRepo`;
   }
 
   createInstance(): EvmJsonRPCBlockRepository {
-    return new EvmJsonRPCBlockRepository(this.cfg, this.chain);
+    return new EvmJsonRPCBlockRepository(this.cfg);
   }
 
   async getBlockHeight(finality: EvmTag): Promise<bigint> {

@@ -1,8 +1,8 @@
 import prometheus from "prom-client";
 import { StatRepository } from "../../domain/repositories";
-import { RepositoryStrategy } from "./strategies/RepositoryStrategy";
+import { StaticStrategy } from "./strategies/StaticStrategy";
 
-export class PromStatRepository implements StatRepository, RepositoryStrategy {
+export class PromStatRepository implements StatRepository, StaticStrategy {
   private counters: Map<string, prometheus.Counter<string>> = new Map();
   private gauges: Map<string, prometheus.Gauge<string>> = new Map();
   private readonly registry: prometheus.Registry;

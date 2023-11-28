@@ -6,6 +6,8 @@ import { Config } from "../../config";
 import { EvmJsonRPCBlockRepository } from "../EvmJsonRPCBlockRepository";
 import { Web3SolanaSlotRepository } from "../Web3SolanaSlotRepository";
 import { Connection } from "@solana/web3.js";
+import { DynamicStrategy } from "./DynamicStrategy";
+import { StaticStrategy } from "./StaticStrategy";
 
 export class RepositoriesStrategy {
   private snsClient?: SNSClient;
@@ -19,9 +21,9 @@ export class RepositoriesStrategy {
   executeStatic(): Map<string, any> {
     let staticRepositories = new Map();
 
-    const repositories = [
+    const repositories: StaticStrategy[] = [
       new SnsEventRepository(this.snsClient!, this.cfg),
-      new FileMetadataRepository(this.cfg, this.cfg.metadata?.dir!),
+      new FileMetadataRepository(this.cfg),
       new PromStatRepository(),
     ];
 
@@ -37,17 +39,15 @@ export class RepositoriesStrategy {
     let dynamicRepositories = new Map();
 
     this.cfg.supportedChains.forEach((chain) => {
-      const config = this.cfg.platforms[chain];
-
-      const repositories = [
-        new EvmJsonRPCBlockRepository(this.cfg, chain),
-        new Web3SolanaSlotRepository(new Connection(config.rpcs[0]), this.cfg, chain),
-      ];
-
       if (!this.cfg.platforms[chain]) throw new Error(`No config for chain ${chain}`);
 
+      const repositories: DynamicStrategy[] = [
+        new EvmJsonRPCBlockRepository(this.cfg),
+        new Web3SolanaSlotRepository(this.cfg),
+      ];
+
       repositories.forEach((repository) => {
-        if (repository.apply())
+        if (repository.apply(chain))
           dynamicRepositories.set(repository.getName(), repository.createInstance());
       });
     });
