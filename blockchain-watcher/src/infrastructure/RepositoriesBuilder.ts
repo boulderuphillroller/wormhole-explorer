@@ -14,7 +14,7 @@ import { RepositoriesStrategy } from "./repositories/strategies/RepositoriesStra
 export class RepositoriesBuilder {
   private cfg: Config;
   private snsClient?: SNSClient;
-  private repositories = new Map();
+  private repositories = new Map<string, any>();
 
   constructor(cfg: Config) {
     this.cfg = cfg;
@@ -25,12 +25,13 @@ export class RepositoriesBuilder {
     this.snsClient = this.createSnsClient();
 
     const repositoryStrategy = new RepositoriesStrategy(this.snsClient, this.cfg);
-    this.repositories = repositoryStrategy.executeStatic();
 
-    this.cfg.supportedChains.forEach((chain) => {
-      if (!this.cfg.platforms[chain]) throw new Error(`No config for chain ${chain}`);
-      this.repositories = repositoryStrategy.executeChain(chain);
-    });
+    const staticRepositories = repositoryStrategy.executeStatic();
+    const dynamicRepositories = repositoryStrategy.executeDynamic();
+
+    this.repositories = staticRepositories;
+    this.repositories = {...this.repositories, dynamicRepositories}
+    dynamicRepositories.forEach((instance, name) => { this.repositories.set(name, instance) });
 
     this.repositories.set(
       "jobs",

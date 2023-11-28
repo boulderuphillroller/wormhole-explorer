@@ -8,7 +8,6 @@ import { Web3SolanaSlotRepository } from "../Web3SolanaSlotRepository";
 import { Connection } from "@solana/web3.js";
 
 export class RepositoriesStrategy {
-  private repositoriesMap = new Map<string, any>();
   private snsClient?: SNSClient;
   private cfg: Config;
 
@@ -18,6 +17,8 @@ export class RepositoriesStrategy {
   }
 
   executeStatic(): Map<string, any> {
+    let staticRepositories = new Map();
+
     const repositories = [
       new SnsEventRepository(this.snsClient!, this.cfg),
       new FileMetadataRepository(this.cfg, this.cfg.metadata?.dir!),
@@ -26,25 +27,31 @@ export class RepositoriesStrategy {
 
     repositories.forEach((repository) => {
       if (repository.apply())
-        this.repositoriesMap.set(repository.getName(), repository.createInstance());
+        staticRepositories.set(repository.getName(), repository.createInstance());
     });
 
-    return this.repositoriesMap;
+    return staticRepositories;
   }
 
-  executeChain(chain: string): Map<string, any> {
-    const config = this.cfg.platforms[chain];
+  executeDynamic(): Map<string, any> {
+    let dynamicRepositories = new Map();
 
-    const repositories = [
-      new EvmJsonRPCBlockRepository(this.cfg, chain),
-      new Web3SolanaSlotRepository(new Connection(config.rpcs[0]), this.cfg, chain),
-    ];
+    this.cfg.supportedChains.forEach((chain) => {
+      const config = this.cfg.platforms[chain];
 
-    repositories.forEach((repository) => {
-      if (repository.apply())
-        this.repositoriesMap.set(repository.getName(), repository.createInstance());
+      const repositories = [
+        new EvmJsonRPCBlockRepository(this.cfg, chain),
+        new Web3SolanaSlotRepository(new Connection(config.rpcs[0]), this.cfg, chain),
+      ];
+
+      if (!this.cfg.platforms[chain]) throw new Error(`No config for chain ${chain}`);
+
+      repositories.forEach((repository) => {
+        if (repository.apply())
+          dynamicRepositories.set(repository.getName(), repository.createInstance());
+      });
     });
 
-    return this.repositoriesMap;
+    return dynamicRepositories;
   }
 }

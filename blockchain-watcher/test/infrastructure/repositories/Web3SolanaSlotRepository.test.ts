@@ -12,34 +12,34 @@ describe("Web3SolanaSlotRepository", () => {
       // Given
       const connectionMock = {};
       const repo = new Web3SolanaSlotRepository(connectionMock as any, cfg, "solana");
-  
+
       // When
       const result = await repo.apply();
-  
+
       // Then
       expect(result).toBe(true);
     });
-  
+
     it("should be get name metadata", async () => {
       // Given
       const connectionMock = {};
       const repo = new Web3SolanaSlotRepository(connectionMock as any, cfg, chain);
-  
+
       // When
       const result = await repo.getName();
-  
+
       // Then
       expect(result).toBe("solana-slotRepo");
     });
-  
+
     it("should be create instance", async () => {
       // Given
       const connectionMock = {};
       const repo = new Web3SolanaSlotRepository(connectionMock as any, cfg, chain);
-  
+
       // When
       const result = await repo.createInstance();
-  
+
       // Then
       expect(result).toBeInstanceOf(Web3SolanaSlotRepository);
     });
