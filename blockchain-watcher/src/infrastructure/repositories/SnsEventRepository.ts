@@ -107,6 +107,7 @@ export class SnsEventRepository implements SnsRepository, StaticStrategy {
       };
     }
 
+    this.logger.info(`Published ${events.length} events to SNS`);
     return {
       status: SUCCESS_STATUS,
     };
@@ -120,8 +121,6 @@ export class SnsEventRepository implements SnsRepository, StaticStrategy {
         this.logger.error(`Error publishing events to SNS: ${result.reason ?? result.reasons}`);
         throw new Error(`Error publishing events to SNS: ${result.reason}`);
       }
-
-      this.logger.info(`Published ${events.length} events to SNS`);
     };
   }
 }

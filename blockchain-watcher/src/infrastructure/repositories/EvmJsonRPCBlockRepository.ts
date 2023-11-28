@@ -11,6 +11,7 @@ import { DynamicStrategy } from "./strategies/DynamicStrategy";
  * On the reliability side, only knows how to timeout.
  */
 
+const HEXADECIMAL_PREFIX = "0x";
 const CHAIN = "ethereum";
 
 export class EvmJsonRPCBlockRepository implements EvmBlockRepository, DynamicStrategy {
@@ -66,12 +67,14 @@ export class EvmJsonRPCBlockRepository implements EvmBlockRepository, DynamicStr
 
     const reqs: any[] = [];
     for (let blockNumber of blockNumbers) {
-      const blockNumberStr = blockNumber.toString();
+      const blockNumberStrParam = `${HEXADECIMAL_PREFIX}${blockNumber.toString(16)}`;
+      const blockNumberStrId = blockNumber.toString();
+
       reqs.push({
         jsonrpc: "2.0",
-        id: blockNumberStr,
+        id: blockNumberStrId,
         method: "eth_getBlockByNumber",
-        params: [blockNumberStr, false],
+        params: [blockNumberStrParam, false],
       });
     }
 
@@ -146,8 +149,8 @@ export class EvmJsonRPCBlockRepository implements EvmBlockRepository, DynamicStr
     const parsedFilters = {
       topics: filter.topics,
       address: filter.addresses,
-      fromBlock: `0x${filter.fromBlock.toString(16)}`,
-      toBlock: `0x${filter.toBlock.toString(16)}`,
+      fromBlock: `${HEXADECIMAL_PREFIX}${filter.fromBlock.toString(16)}`,
+      toBlock: `${HEXADECIMAL_PREFIX}${filter.toBlock.toString(16)}`,
     };
 
     let response: { result: Log[]; error?: ErrorBlock };
@@ -182,13 +185,13 @@ export class EvmJsonRPCBlockRepository implements EvmBlockRepository, DynamicStr
   /**
    * Loosely based on the wormhole-dashboard implementation (minus some specially crafted blocks when null result is obtained)
    */
-  private async getBlock(blockNumberOrTag: bigint | EvmTag): Promise<EvmBlock> {
+  private async getBlock(blockNumberOrTag: EvmTag): Promise<EvmBlock> {
     let response: { result?: EvmBlock; error?: ErrorBlock };
     try {
       response = await this.httpClient.post<typeof response>(this.rpc.href, {
         jsonrpc: "2.0",
         method: "eth_getBlockByNumber",
-        params: [blockNumberOrTag.toString(), false], // this means we'll get a light block (no txs)
+        params: [blockNumberOrTag, false], // this means we'll get a light block (no txs)
         id: 1,
       });
     } catch (e: HttpClientError | any) {

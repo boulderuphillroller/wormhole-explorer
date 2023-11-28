@@ -5,34 +5,19 @@ import {
   VersionedTransactionResponse,
   SolanaJSONRPCError,
 } from "@solana/web3.js";
-import { solana } from "../../domain/entities";
-import { SolanaSlotRepository } from "../../domain/repositories";
-import { Fallible, SolanaFailure } from "../../domain/errors";
-import { DynamicStrategy } from "./strategies/DynamicStrategy";
+import { solana } from "../../../domain/entities";
+import { SolanaSlotRepository } from "../../../domain/repositories";
+import { Fallible, SolanaFailure } from "../../../domain/errors";
 
 const COMMITMENT_FINALIZED = "finalized";
 const COMMITMENT_CONDIRMED = "confirmed";
 const LEGACY_VERSION = "legacy";
-const CHAIN = "solana";
-const NAME = "solana-slotRepo";
 
-export class Web3SolanaSlotRepository implements SolanaSlotRepository, DynamicStrategy {
+export class Web3SolanaSlotRepository implements SolanaSlotRepository {
   private connection: Connection;
 
   constructor(connection: Connection) {
     this.connection = connection;
-  }
-
-  apply(chain: string): boolean {
-    return chain === CHAIN;
-  }
-
-  getName(): string {
-    return NAME;
-  }
-
-  createInstance(): Web3SolanaSlotRepository {
-    return this;
   }
 
   getLatestSlot(commitment: string): Promise<number> {
@@ -64,7 +49,7 @@ export class Web3SolanaSlotRepository implements SolanaSlotRepository, DynamicSt
           return Fallible.error(new SolanaFailure(err.code, err.message));
         }
 
-        return Fallible.error(new SolanaFailure(0, err.message));
+        throw err;
       });
   }
 

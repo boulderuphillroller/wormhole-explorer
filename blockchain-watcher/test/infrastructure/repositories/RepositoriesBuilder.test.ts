@@ -5,8 +5,8 @@ import {
   EvmJsonRPCBlockRepository,
   FileMetadataRepository,
   PromStatRepository,
+  RateLimitedSolanaSlotRepository,
   SnsEventRepository,
-  Web3SolanaSlotRepository,
 } from "../../../src/infrastructure/repositories";
 
 describe("RepositoriesBuilder", () => {
@@ -41,6 +41,6 @@ describe("RepositoriesBuilder", () => {
     expect(repos.getMetadataRepository()).toBeInstanceOf(FileMetadataRepository);
     expect(repos.getSnsEventRepository()).toBeInstanceOf(SnsEventRepository);
     expect(repos.getStatsRepository()).toBeInstanceOf(PromStatRepository);
-    expect(repos.getSolanaSlotRepository()).toBeInstanceOf(Web3SolanaSlotRepository);
+    expect(repos.getSolanaSlotRepository()).toBeInstanceOf(RateLimitedSolanaSlotRepository);
   });
 });

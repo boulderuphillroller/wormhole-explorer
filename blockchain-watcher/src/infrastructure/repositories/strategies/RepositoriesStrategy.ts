@@ -4,10 +4,10 @@ import { PromStatRepository } from "../PromStatRepository";
 import { SNSClient } from "@aws-sdk/client-sns";
 import { Config } from "../../config";
 import { EvmJsonRPCBlockRepository } from "../EvmJsonRPCBlockRepository";
-import { Web3SolanaSlotRepository } from "../Web3SolanaSlotRepository";
 import { Connection } from "@solana/web3.js";
 import { DynamicStrategy } from "./DynamicStrategy";
 import { StaticStrategy } from "./StaticStrategy";
+import { RateLimitedSolanaSlotRepository, Web3SolanaSlotRepository } from "..";
 
 export class RepositoriesStrategy {
   private snsClient?: SNSClient;
@@ -42,11 +42,14 @@ export class RepositoriesStrategy {
       const platform = this.cfg.platforms[chain];
       if (!platform) throw new Error(`No config for chain ${chain}`);
 
-      const repositories: DynamicStrategy[] = [
+      const repositories = [
         new EvmJsonRPCBlockRepository(this.cfg),
-        new Web3SolanaSlotRepository(
-          new Connection(platform.rpcs[0], { disableRetryOnRateLimit: true }),
-        ),
+        new RateLimitedSolanaSlotRepository(
+          new Web3SolanaSlotRepository(
+            new Connection(platform.rpcs[0], { disableRetryOnRateLimit: true })
+          ),
+          platform.rateLimit
+        )
       ];
 
       repositories.forEach((repository) => {

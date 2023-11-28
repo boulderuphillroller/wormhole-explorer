@@ -7,6 +7,7 @@ import {
   PromStatRepository,
   StaticJobRepository,
   Web3SolanaSlotRepository,
+  RateLimitedSolanaSlotRepository,
 } from "./repositories";
 import { JobRepository } from "../domain/repositories";
 import { RepositoriesStrategy } from "./repositories/strategies/RepositoriesStrategy";
